@@ -15,7 +15,7 @@
 	<name>Covid Jab Notifier </name>
 	<description>Covid Jab Notifier </description>
 	<properties>
-		<java.version>8</java.version>
+		<java.version>1.8</java.version>
 		<maven.test.skip>true</maven.test.skip>
 	</properties>
 	<dependencies>
