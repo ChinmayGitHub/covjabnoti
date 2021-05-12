@@ -1,0 +1,7 @@
+com/chinx/covjabnoti/controller/SubscriptionController.class
+com/chinx/covjabnoti/service/SubscriptionService.class
+com/chinx/covjabnoti/repository/SubscriptionRepository.class
+com/chinx/covjabnoti/model/Subscription.class
+com/chinx/covjabnoti/scheduler/SlotChecker.class
+com/chinx/covjabnoti/CovidJabNotifierApplication.class
+com/chinx/covjabnoti/model/Slot.class

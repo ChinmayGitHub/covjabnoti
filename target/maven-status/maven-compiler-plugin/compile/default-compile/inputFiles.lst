@@ -1,0 +1,7 @@
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/repository/SubscriptionRepository.java
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/model/Subscription.java
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/controller/SubscriptionController.java
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/model/Slot.java
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/CovidJabNotifierApplication.java
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/scheduler/SlotChecker.java
+/Users/chinmaysamant/chinx-workspace/covjabnoti/src/main/java/com/chinx/covjabnoti/service/SubscriptionService.java
