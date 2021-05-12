@@ -6,3 +6,4 @@
 **/.settings/
 blog/bin/
 **/.tern-project
+/target/
