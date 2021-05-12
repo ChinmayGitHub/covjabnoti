@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -39,7 +40,7 @@ public class SlotChecker {
 
 	@Scheduled(fixedRateString = "${frequency.in.milliseconds}", initialDelay = 5000)
 	public void slotCheck() {
-		log.info("******* Insid slotCheck *******");
+		log.info("************ Insid slotCheck ************");
 
 		Set<String> districtIDSet = subscriptionService.getDistrictIDSet();
 		log.info("districtIDSet : " + districtIDSet);
@@ -47,9 +48,9 @@ public class SlotChecker {
 		for (String district_id : districtIDSet) {
 			log.info("## Processing district_id : " + district_id);
 			List<Subscription> subscriptions18 = subscriptionService.findByDistrict_idAndAge_slot(district_id, "18");
-			log.info("subscriptions18 : " + subscriptions18.size());
+			log.info("subscriptions-18 : " + subscriptions18.size());
 			List<Subscription> subscriptions45 = subscriptionService.findByDistrict_idAndAge_slot(district_id, "45");
-			log.info("subscriptions45 : " + subscriptions45.size());
+			log.info("subscriptions-45 : " + subscriptions45.size());
 
 			String date = getDateTimeString();
 			String cowin_uri = cowin_api + "?district_id=" + district_id + "&date=" + date;
@@ -57,11 +58,10 @@ public class SlotChecker {
 			String cowin_response = callCowinAPI(cowin_uri);
 			// log.info("cowin_response : " + cowin_response);
 			ArrayList<ArrayList<Slot>> availableSlots = getAvailableSlots(cowin_response);
-			log.info("availableSlots : " + availableSlots.size());
 			ArrayList<Slot> availableSlots18 = availableSlots.get(0);
 			ArrayList<Slot> availableSlots45 = availableSlots.get(1);
-			log.info("availableSlots18 : " + availableSlots18.size());
-			log.info("availableSlots45 : " + availableSlots45.size());
+			log.info("availableSlots-18 : " + availableSlots18.size());
+			log.info("availableSlots-45 : " + availableSlots45.size());
 
 			for (Slot slot : availableSlots18) {
 				notifySubscribers(slot, subscriptions18);
@@ -71,19 +71,7 @@ public class SlotChecker {
 			for (Slot slot : availableSlots45) {
 				notifySubscribers(slot, subscriptions45);
 			}
-
 		}
-
-////		374 - sindh
-		// 424 - megha
-		// 151 - goa
-		// 796 - andman
-
-//		final String uri = wp_api + "?phone=+919923163638&text=this+msg+"+i+"+from+code&apikey=393740";
-//	    RestTemplate restTemplate = new RestTemplate();
-//	    String result = restTemplate.getForObject(uri, String.class);
-//	    System.out.println(result);
-
 	}
 
 	private void notifySubscribers(Slot slot, List<Subscription> Subscriptions) {
@@ -92,7 +80,14 @@ public class SlotChecker {
 			String apikey = subscription.getApi_key();
 			String msg = getFormatedMsg(slot);
 			final String uri = wp_api + "?phone=" + phone + "&text=" + msg + "&apikey=" + apikey;
-			log.info("Notification sent to : " + uri);
+			RestTemplate restTemplate = new RestTemplate();
+			String result = restTemplate.getForObject(uri, String.class);
+			log.info("Notification sent to : " + result);
+			try {
+			    TimeUnit.SECONDS.sleep(2);
+			} catch (InterruptedException ie) {
+			    Thread.currentThread().interrupt();
+			}
 		}
 	}
 
