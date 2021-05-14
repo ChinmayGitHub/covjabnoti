@@ -52,26 +52,47 @@ public class SlotChecker {
 			List<Subscription> subscriptions45 = subscriptionService.findByDistrict_idAndAge_slot(district_id, "45");
 			log.info("subscriptions-45 : " + subscriptions45.size());
 
-			String date = getDateTimeString();
-			String cowin_uri = cowin_api + "?district_id=" + district_id + "&date=" + date;
-			log.info("cowin_uri : " + cowin_uri);
-			String cowin_response = callCowinAPI(cowin_uri);
-			// log.info("cowin_response : " + cowin_response);
-			ArrayList<ArrayList<Slot>> availableSlots = getAvailableSlots(cowin_response);
+			ArrayList<String> cowin_response_list = new ArrayList<String>();
+
+			Calendar calendar_date = getCalendar();
+			for (;;) {
+				String date_string = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH).format(calendar_date.getTime());
+				String cowin_uri = cowin_api + "?district_id=" + district_id + "&date=" + date_string;
+				log.info("cowin_uri : " + cowin_uri);
+				String cowin_response = callCowinAPI(cowin_uri);
+
+				JSONObject response = new JSONObject(cowin_response);
+				if (response.has("centers") && response.getJSONArray("centers").length() > 0) {
+					cowin_response_list.add(cowin_response);
+					log.info("check next 7 days");
+					calendar_date.add(Calendar.DATE, 7);
+				} else {
+					log.info("No/0 count in response");
+					break;
+				}
+			}
+
+			ArrayList<ArrayList<Slot>> availableSlots = getAvailableSlots(cowin_response_list);
 			ArrayList<Slot> availableSlots18 = availableSlots.get(0);
 			ArrayList<Slot> availableSlots45 = availableSlots.get(1);
 			log.info("availableSlots-18 : " + availableSlots18.size());
 			log.info("availableSlots-45 : " + availableSlots45.size());
 
-			for (Slot slot : availableSlots18) {
-				notifySubscribers(slot, subscriptions18);
-				notifySubscribers(slot, subscriptions45);
+			if (subscriptions45.size() > 0 || subscriptions18.size() > 0) {
+				for (Slot slot : availableSlots18) {
+					notifySubscribers(slot, subscriptions18);
+					notifySubscribers(slot, subscriptions45);
+				}
 			}
 
-			for (Slot slot : availableSlots45) {
-				notifySubscribers(slot, subscriptions45);
+			if (subscriptions45.size() > 0) {
+				for (Slot slot : availableSlots45) {
+					notifySubscribers(slot, subscriptions45);
+				}
 			}
+
 		}
+		log.info("************ slotCheck Over ************");
 	}
 
 	private void notifySubscribers(Slot slot, List<Subscription> Subscriptions) {
@@ -79,46 +100,49 @@ public class SlotChecker {
 			String phone = subscription.getPhone_no();
 			String apikey = subscription.getApi_key();
 			String msg = getFormatedMsg(slot);
-			final String uri = wp_api + "?phone=" + phone + "&text=" + msg + "&apikey=" + apikey;
+			final String url = wp_api + "?phone=" + phone + "&text=" + msg + "&apikey=" + apikey;
 			RestTemplate restTemplate = new RestTemplate();
-			String result = restTemplate.getForObject(uri, String.class);
+			String result = restTemplate.getForObject(url, String.class);
+			//log.info("Notification sent to : " + url);
 			log.info("Notification sent to : " + result);
 			try {
-			    TimeUnit.SECONDS.sleep(2);
+				TimeUnit.SECONDS.sleep(2);
 			} catch (InterruptedException ie) {
-			    Thread.currentThread().interrupt();
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
 
 	private String getFormatedMsg(Slot slot) {
 		String msg = slot.toString();
+		msg = msg +"-ChinX";
 		return msg.replace(' ', '+');
 	}
 
-	private ArrayList<ArrayList<Slot>> getAvailableSlots(String cowin_response) {
+	private ArrayList<ArrayList<Slot>> getAvailableSlots(ArrayList<String> cowin_response_list) {
 		ArrayList<ArrayList<Slot>> availableSlots = new ArrayList<ArrayList<Slot>>();
 		ArrayList<Slot> availableSlots18 = new ArrayList<Slot>();
 		ArrayList<Slot> availableSlots45 = new ArrayList<Slot>();
 
-		JSONObject response = new JSONObject(cowin_response);
-
-		JSONArray centers = response.getJSONArray("centers");
-		for (int i = 0; i < centers.length(); i++) {
-			JSONObject center = centers.getJSONObject(i);
-			if (center.has("sessions")) {
-				JSONArray sessions = center.getJSONArray("sessions");
-				for (int j = 0; j < sessions.length(); j++) {
-					JSONObject session = sessions.getJSONObject(j);
-					if (session.getInt("available_capacity") > 0) {
-						Slot slot = new Slot(center.getString("name"), session.getString("date"),
-								String.valueOf(session.getInt("min_age_limit")),
-								String.valueOf(session.getInt("available_capacity")), session.getString("vaccine"));
-						if (String.valueOf(session.getInt("min_age_limit")).equals("18")) {
-							availableSlots18.add(slot);
-						}
-						if (String.valueOf(session.getInt("min_age_limit")).equals("45")) {
-							availableSlots45.add(slot);
+		for (String cowin_response : cowin_response_list) {
+			JSONObject response = new JSONObject(cowin_response);
+			JSONArray centers = response.getJSONArray("centers");
+			for (int i = 0; i < centers.length(); i++) {
+				JSONObject center = centers.getJSONObject(i);
+				if (center.has("sessions")) {
+					JSONArray sessions = center.getJSONArray("sessions");
+					for (int j = 0; j < sessions.length(); j++) {
+						JSONObject session = sessions.getJSONObject(j);
+						if (session.getInt("available_capacity") > 0) {
+							Slot slot = new Slot(center.getString("name"), session.getString("date"),
+									String.valueOf(session.getInt("min_age_limit")),
+									String.valueOf(session.getInt("available_capacity")), session.getString("vaccine"));
+							if (String.valueOf(session.getInt("min_age_limit")).equals("18")) {
+								availableSlots18.add(slot);
+							}
+							if (String.valueOf(session.getInt("min_age_limit")).equals("45")) {
+								availableSlots45.add(slot);
+							}
 						}
 					}
 				}
@@ -140,11 +164,11 @@ public class SlotChecker {
 		return cowin_response.getBody();
 	}
 
-	private String getDateTimeString() {
+	private Calendar getCalendar() {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeZone(TimeZone.getTimeZone("GMT+5:30"));
 		calendar.setTimeInMillis(new Date().getTime());
-		return new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH).format(calendar.getTime());
+		return calendar;
 	}
 
 }

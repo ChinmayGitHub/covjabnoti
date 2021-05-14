@@ -1,0 +1,30 @@
+version: "2"
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo
+    networks:
+      - my-net
+    environment:
+      HOSTNAME: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./volumes/mongo:/data/db
+
+  covjabnoti:
+    container_name: covjabnoti
+    image: csaman10/covjabnoti:latest
+    networks:
+      - my-net
+    environment:
+      HOSTNAME: covjabnoti
+      mongodb.host: mongodb
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb  
+
+networks:
+  my-net:
+    driver: bridge
